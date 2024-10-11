@@ -1,11 +1,12 @@
 const userModel = require("../model/users/userSchema")
 const jwt =require('jsonwebtoken')
 const cloudinary=require('../cloudinary')
-const { response } = require("express")
+const { response, request } = require("express")
 const postModel = require("../model/post/postSchema")
 const { json } = require("body-parser")
 const chatModel = require("../model/chatSchema/chatSchema")
-
+const messageHistory=require('../model/messageHistory/messageHistory')
+const commentModel = require("../model/postComment/postComment")
 
 //user reg post
 exports.userRegPost=async(req,res)=>{
@@ -296,6 +297,7 @@ exports.likeUpdate=(req,res)=>{
             if(response)
             {
                 res.json(response)
+                
             }
             else{
                 chatModel.create({
@@ -308,6 +310,7 @@ exports.likeUpdate=(req,res)=>{
                     res.json('error to add message')
                 })
             }
+            
         })
         .catch(err=>{
             res.json('error to add message')
@@ -338,4 +341,47 @@ exports.likeUpdate=(req,res)=>{
             res.status(400).json(err)
 
         })
+    }
+
+    exports.messageHistory=(req,res)=>{
+        const {id}=req.body
+        chatModel.find({users:{$in:[id]}})
+        .then(response=>{
+         const user=   response.reduce((prev,next)=>{
+            prev=[...prev,next.users[0]==id?next.users[1]:next.users[0]]
+            return prev
+            },[])
+
+          userModel.find({_id:{$in:user}})
+          .then(result=>{
+            res.json(result)
+          })
+        })
+        .catch(err=>{
+            res.json(err).status(400)
+        })
+    }
+
+    //postComment
+
+    exports.postComment=(req,res)=>{
+        const data=req.body
+        commentModel.create({
+            postid:data._id,
+            comment:data.comment,
+            commenterid:data.commenterid
+        })
+        .then(response=>{
+            res.json(response)
+        })
+    }
+
+    //getComment
+    exports.getComment=(req,res)=>{
+        const {_id}=req.body
+       commentModel.find({postid:_id}).sort({date:1})
+       .then(response=>{
+        res.json(response)
+        console.log(response)
+       })
     }

@@ -57,5 +57,13 @@ router.get('/getMessage/:_id',userController.getMessage)
 //postMessage
 router.post('/postMessage',userController.postMessage)
 
+//messageHistory
+router.post('/messageHistory',userController.messageHistory)
+
+//postComment
+router.post('/postComment',userController.postComment)
+
+//getComment
+router.post('/getComment',userController.getComment)
 
 module.exports=router
