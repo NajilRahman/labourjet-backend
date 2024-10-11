@@ -66,4 +66,13 @@ router.post('/postComment',userController.postComment)
 //getComment
 router.post('/getComment',userController.getComment)
 
+//sendWorkRequest
+router.post('/sendWorkRequest',userController.sendWorkRequest)
+
+//workStatusUpdate
+router.post('/workStatusUpdate',userController.workStatusUpdate)
+
+//paymentStatusUpdate
+router.post('/paymentStatusUpdate',userController.paymentStatusUpdate)
 module.exports=router
+

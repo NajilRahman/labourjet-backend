@@ -17,6 +17,7 @@ const chatSchema=new mongoose.Schema({
     }
     
     
+    
 })
 
 const chatModel=new mongoose.model('chat',chatSchema)
