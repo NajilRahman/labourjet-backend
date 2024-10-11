@@ -22,6 +22,11 @@ app.use(router)
 app.use(express.json())
 
 
+app.get('/',(req,res)=>{
+    res.send('connected')
+    res.json('connected')
+    
+})
 
 io.on("connection",(socket)=>{
     console.log('new connections')
