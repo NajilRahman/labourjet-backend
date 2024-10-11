@@ -24,7 +24,6 @@ app.use(express.json())
 
 app.get('/',(req,res)=>{
     res.send('connected')
-    res.json('connected')
     
 })
 
