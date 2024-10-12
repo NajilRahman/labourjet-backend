@@ -130,9 +130,7 @@ exports.updatePost=async(req,res)=>{
 exports.findUser=(req,res)=>{
     const { search } = req.body;
 
-if (!search) {
-    return res.status(400).json({ error: 'Search term is required' });
-}
+
 
 userModel.createIndexes()  // Ensure indexes are created first
     .then(() => {
