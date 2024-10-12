@@ -74,5 +74,8 @@ router.post('/workStatusUpdate',userController.workStatusUpdate)
 
 //paymentStatusUpdate
 router.post('/paymentStatusUpdate',userController.paymentStatusUpdate)
+
+//getWorksData
+router.post('/getWorksData',userController.getWorksData)
 module.exports=router
 

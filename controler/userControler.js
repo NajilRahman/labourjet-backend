@@ -469,3 +469,18 @@ exports.paymentStatusUpdate=(req,res)=>{
     })
     
 }
+
+
+//getWorksData
+
+exports.getWorksData=(req,res)=>{
+    const {id}=req.body
+    workModel.find({$or:[{recid:id},{senderid:id}]})
+    .then(response=>{
+        res.json(response)
+    })
+    .catch(err=>{
+        res.json(err).status(400)
+
+    })
+}
