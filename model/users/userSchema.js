@@ -2,17 +2,21 @@ const mongoose=require('mongoose')
 
 const userSchema=new mongoose.Schema({
     userName:{
-        type:String,
-    },
+        type:String
+       },
     imgUrl:{
         type:String,
         default:'https://www.shutterstock.com/image-vector/vector-flat-illustration-grayscale-avatar-600nw-2264922221.jpg'
     },
     email:{
         type:String,
+        unique:true
+
     },
     phone:{
         type:Number,
+        unique:true
+
     }
     , password:{
         type:String,
