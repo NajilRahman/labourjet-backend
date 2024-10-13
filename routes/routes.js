@@ -5,6 +5,7 @@ const router=express.Router()
 
 //user reg post
 router.post('/userReg',userController.userRegPost)
+router.post('/employeeReg',userController.employeeRegPost)
 
 
 //login Verify
@@ -77,5 +78,10 @@ router.post('/paymentStatusUpdate',userController.paymentStatusUpdate)
 
 //getWorksData
 router.post('/getWorksData',userController.getWorksData)
+
+//setRating
+router.post('/setRating',userController.setRating)
+
+
 module.exports=router
 

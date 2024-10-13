@@ -20,10 +20,10 @@ const userSchema=new mongoose.Schema({
     , password:{
         type:String,
     }
-    , certificate:{
+    , documents:{
         type:String,
     }
-    , job:{
+    , jobRole:{
         type:String,
     }
     , idCard:{
@@ -31,6 +31,10 @@ const userSchema=new mongoose.Schema({
     }
     , Education:{
         type:String,
+    }
+    ,
+    approvel:{
+        type:String
     }
     , 
     state:{

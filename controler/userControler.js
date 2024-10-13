@@ -8,7 +8,7 @@ const chatModel = require("../model/chatSchema/chatSchema")
 const messageHistory=require('../model/messageHistory/messageHistory')
 const commentModel = require("../model/postComment/postComment")
 const workModel = require("../model/work/workSchema")
-
+ 
 //user reg post
 exports.userRegPost=async(req,res)=>{
 const  data= req.body
@@ -31,6 +31,44 @@ userModel.findOne({email:email})
 }
 
 
+//employee reg post
+exports.employeeRegPost=async(req,res)=>{
+    var  data= req.body
+    data={...data,userName:data.userName}
+
+    cloudinary.uploader.upload(data.documents, { folder: 'profile' })
+    .then(firstres=>{
+        data={...data,documents:firstres.secure_url}
+         cloudinary.uploader.upload(data.idCard, { folder: 'profile' })
+        .then(secres=>{
+            data={...data,idCard:secres.secure_url}
+            const {email}=req.body
+            userModel.findOne({email:email})
+            .then(exist=>{
+                if(exist==null)
+                {
+                    userModel.create(data)
+                    .then((result)=>{
+                        console.log(result)
+                        res.status(200).json(result)
+                        res.end()
+                    })
+                }
+                else{
+                    res.status(400).json('email already exist')
+                    res.end()
+                }
+            }) 
+        })
+        
+    })
+    
+
+    
+
+   
+}
+
 // user login verify
 
 exports.loginVerify=(req,res)=>{
@@ -38,14 +76,40 @@ exports.loginVerify=(req,res)=>{
     const {email}=req.body
     userModel.findOne({email:email})
     .then(exist=>{
-       if(exist?.password==data.password)
+       if(exist?.userType=='user')
        {
-        res.status(200).json({user:jwt.sign({userid:exist._id},'secret123'),_id:exist._id,userType:exist.userType,follower:exist.follower})
+        if(exist?.password==data.password)
+            {
+             res.status(200).json({user:jwt.sign({userid:exist._id},'secret123'),_id:exist._id,userType:exist.userType,follower:exist.follower})
+            }
+            else{
+             res.status(300).json('Wrong Password')
+            }
        }
-       else{
-        res.status(400).json('no data found')
+       else if(exist.userType=='employee')
+       {
+        if(exist.approvel=='accepted')
+        {
+            console.log(exist.approvel)
+            if(exist?.password==data.password)
+                {
+                 res.status(200).json({user:jwt.sign({userid:exist._id},'secret123'),_id:exist._id,userType:exist.userType,follower:exist.follower})
+                }
+                else{
+                 res.status(300).json('Wrong Password')
+                }
+        }
+        else{
+            console.log(exist.approvel)
+            res.status(300).json('Your Employee Request in Penging')
+        }
+        
        }
     }) 
+    .catch(err=>{
+        res.status(300).json('user not found . please register')
+
+    })
 }
 
 //logined user Data
@@ -482,5 +546,19 @@ exports.getWorksData=(req,res)=>{
     .catch(err=>{
         res.json(err).status(400)
 
+    })
+}
+
+//setRating
+
+exports.setRating=(req,res)=>{
+    const {_id,rating}=req.body
+    workModel.findOneAndUpdate({_id},{$set:{rating}})
+    .then(response=>{
+        res.json(response.rating)
+
+    })
+    .catch(err=>{
+        res.status(300).json('rating update failed')
     })
 }
