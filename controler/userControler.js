@@ -36,33 +36,33 @@ exports.employeeRegPost=async(req,res)=>{
     var  data= req.body
     data={...data,userName:data.userName}
 
-    cloudinary.uploader.upload(data.documents, { folder: 'profile' })
+   data.documents? await cloudinary.uploader.upload(data.documents, { folder: 'profile' })
     .then(firstres=>{
         data={...data,documents:firstres.secure_url}
-         cloudinary.uploader.upload(data.idCard, { folder: 'profile' })
+    })
+    :''
+    data.idCard?  await  cloudinary.uploader.upload(data.idCard, { folder: 'profile' })
         .then(secres=>{
             data={...data,idCard:secres.secure_url}
-            const {email}=req.body
-            userModel.findOne({email:email})
-            .then(exist=>{
-                if(exist==null)
-                {
-                    userModel.create(data)
-                    .then((result)=>{
-                        console.log(result)
-                        res.status(200).json(result)
-                        res.end()
-                    })
-                }
-                else{
-                    res.status(400).json('email already exist')
-                    res.end()
-                }
-            }) 
         })
-        
-    })
-    
+        :''
+        const {email}=req.body
+        userModel.findOne({email:email})
+        .then(exist=>{
+            if(exist==null)
+            {
+                userModel.create(data)
+                .then((result)=>{
+                    console.log(result)
+                    res.status(200).json(result)
+                    res.end()
+                })
+            }
+            else{
+                res.status(400).json('email already exist')
+                res.end()
+            }
+        })     
 
     
 
@@ -101,7 +101,7 @@ exports.loginVerify=(req,res)=>{
         }
         else{
             console.log(exist.approvel)
-            res.status(300).json('Your Employee Request in Penging')
+            res.status(300).json('Your Employee Request in Pending')
         }
         
        }
