@@ -83,5 +83,15 @@ router.post('/getWorksData',userController.getWorksData)
 router.post('/setRating',userController.setRating)
 
 
+//getallusers
+router.get('/getallusers',userController.getallusers)
+
+//delterUser
+router.delete('/deleteUser/:_id',userController.deleteUser)
+
+
+//changeStatus
+router.post('/changeStatus',userController.changeStatus)
+
 module.exports=router
 

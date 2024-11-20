@@ -34,7 +34,7 @@ io.on("connection",(socket)=>{
         socket.join(viewerid)
         console.log('viewer joined single rool :', viewerid)
     }) 
-   socket.on('joinChat',(_id)=>{
+    socket.on('joinChat',(_id)=>{
     socket.join(_id)
     console.log('user join chat room' ,_id)
    })

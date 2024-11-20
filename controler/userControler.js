@@ -105,6 +105,21 @@ exports.loginVerify=(req,res)=>{
         }
         
        }
+       else if(exist.userType=='admin')
+        {
+       
+            
+                    if(exist?.password==data.password)
+                        {
+                         res.status(200).json({user:jwt.sign({userid:exist._id},'secret123'),_id:exist._id,userType:exist.userType})
+                        }
+                        else{
+                         res.status(300).json('Wrong Password')
+                        }
+                
+         }
+        
+        
     }) 
     .catch(err=>{
         res.status(300).json('user not found . please register')
@@ -562,3 +577,36 @@ exports.setRating=(req,res)=>{
         res.status(300).json('rating update failed')
     })
 }
+
+
+
+exports.getallusers=(req,res)=>{
+   userModel.find()
+   .then(response=>{
+    res.status(200).json(response)
+   })
+}
+
+
+exports.deleteUser=(req,res)=>{
+    const {_id}=req.params
+    userModel.findOneAndDelete({_id})
+    .then(response=>{
+        console.log(response)
+
+     res.status(200).json(response)
+    })
+ }
+
+ exports.changeStatus = (req, res) => {
+    const data = req.body;
+    data.approvel=='accepted'?data.approvel='rejected':data.approvel='accepted'
+    userModel.findOneAndUpdate({ _id:data._id }, data)
+        .then(updatedUser => {
+            console.log(updatedUser)
+            res.status(200).json(updatedUser);
+        })
+        .catch(err => {
+            res.status(500).json({ message: 'Error updating user', error: err });
+        });
+};
