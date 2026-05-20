@@ -1,15 +1,19 @@
 const jwt=require('jsonwebtoken')
-const userMiddlewear=(req,res,next)=>{
+const userMiddleware=(req,res,next)=>{
   const token=  req.headers.userid
  if(token)
  {
-  const payload=jwt.verify(token,'secret123')
-  req.payload=payload.userid
-  next()
+  try {
+    const payload=jwt.verify(token, process.env.JWT_SECRET || 'secret123')
+    req.payload=payload.userid
+    next()
+  } catch(e) {
+    res.status(401).json('invalid token')
+  }
  }
  else{
-  res.status(404).json('not autherized')
+  res.status(401).json('not authorized')
  }
 }
 
-module.exports=userMiddlewear
+module.exports=userMiddleware

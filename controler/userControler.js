@@ -1,8 +1,5 @@
 const userModel = require("../model/users/userSchema")
 const jwt = require('jsonwebtoken')
-const pendingLogins = {};
-const pendingRegs = {};
-const nodemailer = require('nodemailer');
 const cloudinary = require('../cloudinary').default
 const { response, request } = require("express")
 const postModel = require("../model/post/postSchema")
@@ -86,117 +83,48 @@ exports.employeeRegPost = async (req, res) => {
 }
 
 // user login verify
-exports.loginVerify = async (req, res) => {
-    const { email } = req.body;
-    try {
-        const exist = await userModel.findOne({ email });
-        if (!exist) {
-            return res.status(400).json('user not found . please register');
-        }
-        
-        if (exist.userType === 'employee' && exist.approvel !== 'accepted') {
-            return res.status(300).json('Your Employee Request is Pending');
-        }
+exports.loginVerify = (req, res) => {
+    const data = req.body
+    const { email, password } = req.body
+    userModel.findOne({ email: email })
+        .then(async (exist) => {
+            if (!exist) {
+                return res.status(300).json('user not found . please register')
+            }
 
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        pendingLogins[email] = { otp, expires: Date.now() + 10 * 60 * 1000, userId: exist._id, userType: exist.userType };
-        
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
-        
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'LabourJet Login OTP',
-            text: `Your login OTP is ${otp}. It is valid for 10 minutes.`
-        });
-        return res.status(200).json('Login OTP sent');
-    } catch (err) {
-        console.error('Error in loginVerify:', err);
-        return res.status(500).json('Internal Server Error');
-    }
-};
+            // Secure password comparison: compares hashed, falls back to plain-text for legacy users
+            const isMatch = await bcrypt.compare(password, exist.password).catch(() => false) || (password === exist.password)
 
-// OTP registration flow
-exports.sendRegisterOTP = async (req, res) => {
-    const { email } = req.body;
-    const exists = await userModel.findOne({ email });
-    if (exists) return res.status(400).json('Email already registered');
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    pendingRegs[email] = { otp, expires: Date.now() + 10 * 60 * 1000, data: req.body };
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    });
-    await transporter.sendMail({
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'LabourJet Registration OTP',
-        text: `Your registration OTP is ${otp}. It is valid for 10 minutes.`
-    });
-    return res.status(200).json('Registration OTP sent');
-};
-
-exports.verifyRegisterAndCreate = async (req, res) => {
-    const { email, otp } = req.body;
-    const entry = pendingRegs[email];
-    if (!entry || entry.otp !== otp || Date.now() > entry.expires) {
-        return res.status(400).json('Invalid or expired OTP');
-    }
-    
-    let data = entry.data;
-
-    // Handle employee document uploads
-    if (data.documents) {
-        try {
-            const firstres = await cloudinary.uploader.upload(data.documents, { folder: 'profile' });
-            data.documents = firstres.secure_url;
-        } catch (e) {
-            console.error('Error uploading documents:', e);
-        }
-    }
-    if (data.idCard) {
-        try {
-            const secres = await cloudinary.uploader.upload(data.idCard, { folder: 'profile' });
-            data.idCard = secres.secure_url;
-        } catch (e) {
-            console.error('Error uploading ID Card:', e);
-        }
-    }
-
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    const newUser = { ...data, password: hashedPassword };
-    
-    await userModel.create(newUser);
-    delete pendingRegs[email];
-    return res.status(200).json('User created successfully');
-};
-
-exports.verifyLoginOTP = async (req, res) => {
-    const { email, otp } = req.body;
-    const entry = pendingLogins[email];
-    if (!entry || entry.otp !== otp || Date.now() > entry.expires) {
-        return res.status(400).json('Invalid or expired OTP');
-    }
-    
-    try {
-        const exist = await userModel.findOne({ email });
-        const token = jwt.sign({ userid: entry.userId }, process.env.JWT_SECRET || 'secret123');
-        delete pendingLogins[email];
-        
-        return res.status(200).json({ 
-            user: token, 
-            _id: exist._id, 
-            userType: exist.userType, 
-            follower: exist.follower 
-        });
-    } catch (err) {
-        console.error(err);
-        return res.status(500).json('Error logging in');
-    }
-};
+            if (exist.userType == 'user') {
+                if (isMatch) {
+                    res.status(200).json({ user: jwt.sign({ userid: exist._id }, process.env.JWT_SECRET || 'secret123'), _id: exist._id, userType: exist.userType, follower: exist.follower })
+                } else {
+                    res.status(300).json('Wrong Password')
+                }
+            } else if (exist.userType == 'employee') {
+                if (exist.approvel == 'accepted') {
+                    console.log(exist.approvel)
+                    if (isMatch) {
+                        res.status(200).json({ user: jwt.sign({ userid: exist._id }, process.env.JWT_SECRET || 'secret123'), _id: exist._id, userType: exist.userType, follower: exist.follower })
+                    } else {
+                        res.status(300).json('Wrong Password')
+                    }
+                } else {
+                    console.log(exist.approvel)
+                    res.status(300).json('Your Employee Request in Pending')
+                }
+            } else if (exist.userType == 'admin') {
+                if (isMatch) {
+                    res.status(200).json({ user: jwt.sign({ userid: exist._id }, process.env.JWT_SECRET || 'secret123'), _id: exist._id, userType: exist.userType })
+                } else {
+                    res.status(300).json('Wrong Password')
+                }
+            }
+        })
+        .catch((err) => {
+            res.status(300).json('user not found . please register')
+        })
+}
 
 // logined user Data
 exports.logineduserData = (req, res) => {
@@ -318,9 +246,6 @@ exports.findUserById = (req, res) => {
 // followUpdate
 exports.followUpdate = (req, res) => {
     const { userData, viewerid, reqType } = req.body
-    if (userData._id == viewerid) {
-        return res.status(400).json({ error: "You cannot follow yourself" });
-    }
     if (reqType == 'follow') {
         userModel.find({ $or: [{ _id: userData._id }, { _id: viewerid }] })
             .then((response) => {
@@ -395,7 +320,7 @@ exports.likeUpdate = (req, res) => {
 // recommend
 exports.recommend = (req, res) => {
     const { _id } = req.body
-    userModel.find({ _id: { $ne: _id }, follower: { $ne: _id } }).limit(3)
+    userModel.find({ follower: { $ne: _id } }).limit(3)
         .then((response) => {
             res.json(response)
         })
@@ -448,14 +373,10 @@ exports.postMessage = (req, res) => {
         {
             $push: {
                 messages: {
-                    // For text messages, msg holds the text; for media, content holds the URL
                     msg: data.msg,
                     messager: data.messager,
                     recid: data.recid,
                     msgType: data.msgType,
-                    // New fields for media handling
-                    type: data.type || 'text', // 'text', 'image', 'audio', 'video'
-                    content: data.content || data.msg, // URL for media or text fallback
                     status: data.status ? data.status : '',
                     upiid: data.upiid ? data.upiid : '',
                     amount: data.amount ? data.amount : '',
@@ -520,32 +441,6 @@ exports.getComment = (req, res) => {
         })
 }
 
-// replyComment
-exports.replyComment = async (req, res) => {
-    const { commentId, reply, commenterid, userName } = req.body;
-    commentModel.findOneAndUpdate(
-        { _id: commentId },
-        {
-            $push: {
-                replies: {
-                    reply,
-                    commenterid,
-                    userName,
-                    date: new Date()
-                }
-            }
-        },
-        { new: true }
-    )
-    .then((response) => {
-        res.status(200).json(response);
-    })
-    .catch((err) => {
-        res.status(400).json(err);
-    });
-}
-
-
 // sendWorkRequest
 exports.sendWorkRequest = (req, res) => {
     const data = req.body
@@ -592,44 +487,30 @@ exports.sendWorkRequest = (req, res) => {
         })
 }
 
+// workStatusUpdate
 exports.workStatusUpdate = (req, res) => {
-    const { status, chatid, workid } = req.body;
-    // whitelist acceptable statuses to avoid malformed values
-    const allowed = ['Approved', 'Rejected', 'completed', 'pending'];
-    const cleanStatus = allowed.includes(status) ? status : 'pending';
-
-    // Update chat messages with the new status
+    const { status, chatid, workid } = req.body
     chatModel.findOne({ _id: chatid })
-        .then(chat => {
-            if (!chat) return;
-            const updatedMessages = chat.messages.map(m =>
-                m.workid == workid ? { ...m, status: cleanStatus } : m
-            );
-            return chatModel.findOneAndUpdate(
-                { _id: chatid },
-                { $set: { messages: updatedMessages } },
-                { new: true }
-            );
-        })
-        .catch(err => console.error('Chat update error:', err));
-
-    // Update work document and broadcast via socket.io
-    workModel.findOneAndUpdate(
-        { _id: workid },
-        { $set: { status: cleanStatus } },
-        { new: true }
-    )
-        .then(workResult => {
-            if (global.io) {
-                global.io.to(chatid).emit('workStatusUpdated', {
-                    workid,
-                    status: cleanStatus
-                });
+        .then((response) => {
+            if (!response) return;
+            const datain = response.messages.filter((item) => item.workid == workid)
+            const datanot = response.messages.filter((item) => item.workid != workid)
+            if (datain.length > 0) {
+                const updated = { ...datain[0]._doc, status: status }
+                const updatedMessages = [...datanot, updated]
+                chatModel.findOneAndUpdate({ _id: chatid }, { $set: { messages: updatedMessages } }).then((chat) => {
+                    console.log('chat updated:', chat != null)
+                })
             }
-            res.status(200).json(workResult);
         })
-        .catch(err => res.status(400).json(err));
-};
+    workModel.findOneAndUpdate({ _id: workid }, { $set: { status: status } }, { new: true })
+        .then((workresult) => {
+            res.status(200).json(workresult)
+        })
+        .catch((err) => {
+            res.status(400).json(err)
+        })
+}
 
 // paymentStatusUpdate
 exports.paymentStatusUpdate = (req, res) => {
@@ -710,101 +591,4 @@ exports.changeStatus = (req, res) => {
         .catch((err) => {
             res.status(500).json({ message: 'Error updating user', error: err });
         });
-};
-
-// password recovery flow
-exports.forgotPassword = async (req, res) => {
-    const { email } = req.body;
-    try {
-        const user = await userModel.findOne({ email });
-        if (!user) {
-            return res.status(400).json('User with this email does not exist.');
-        }
-
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
-        user.resetCode = code;
-        user.resetCodeExpires = Date.now() + 600000;
-        await user.save();
-
-        console.log(`\n=============================================`);
-        console.log(`PASSWORD RECOVERY REQUEST RECEIVED`);
-        console.log(`User Email: ${email}`);
-        console.log(`Generated OTP: ${code}`);
-        console.log(`=============================================\n`);
-
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            let transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: process.env.EMAIL_USER || '',
-                    pass: process.env.EMAIL_PASS || ''
-                }
-            });
-            const mailOptions = {
-                from: process.env.EMAIL_USER,
-                to: email,
-                subject: 'LabourJet Password Reset OTP',
-                text: `Your password recovery OTP is: ${code}. It is valid for 10 minutes.`
-            };
-            await transporter.sendMail(mailOptions);
-            return res.status(200).json('Verification OTP has been sent to your email.');
-        } else {
-            return res.status(200).json('Verification OTP generated. Please check server console/terminal logs for the code.');
-        }
-    } catch (err) {
-        console.error('Error in forgotPassword:', err);
-        return res.status(500).json('Internal Server Error. Please try again.');
-    }
-};
-
-exports.verifyCode = async (req, res) => {
-    const { email, code } = req.body;
-    try {
-        const user = await userModel.findOne({ email });
-        if (!user) {
-            return res.status(400).json('User not found.');
-        }
-
-        if (user.resetCode !== code) {
-            return res.status(400).json('Invalid verification code.');
-        }
-
-        if (user.resetCodeExpires < Date.now()) {
-            return res.status(400).json('Verification code has expired. Please request a new one.');
-        }
-
-        return res.status(200).json('Code verified successfully.');
-    } catch (err) {
-        console.error('Error in verifyCode:', err);
-        return res.status(500).json('Internal Server Error.');
-    }
-};
-
-exports.changePassword = async (req, res) => {
-    const { email, code, newPassword } = req.body;
-    try {
-        const user = await userModel.findOne({ email });
-        if (!user) {
-            return res.status(400).json('User not found.');
-        }
-
-        if (user.resetCode !== code) {
-            return res.status(400).json('Invalid verification code.');
-        }
-
-        if (user.resetCodeExpires < Date.now()) {
-            return res.status(400).json('Verification code has expired.');
-        }
-
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        user.password = hashedPassword;
-        user.resetCode = undefined;
-        user.resetCodeExpires = undefined;
-        await user.save();
-
-        return res.status(200).json('Password changed successfully. Please log in.');
-    } catch (err) {
-        console.error('Error in changePassword:', err);
-        return res.status(500).json('Internal Server Error.');
-    }
 };

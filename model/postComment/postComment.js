@@ -14,7 +14,13 @@ const commentSchema=new mongoose.Schema({
     date:{
         type:Date,
         default:Date.now()
-    }
+    },
+    replies: [{
+        reply: { type: String, required: true },
+        commenterid: { type: String, required: true },
+        userName: { type: String },
+        date: { type: Date, default: Date.now }
+    }]
 })
 
 

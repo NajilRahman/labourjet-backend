@@ -1,15 +1,15 @@
 const express = require("express");
-const  userController = require("../controler/userControler.js");
+const  userController = require("../controllers/userControler.js");
 const router=express.Router()
 
 
-//user reg post
-router.post('/userReg',userController.userRegPost)
-router.post('/employeeReg',userController.employeeRegPost)
+//user registration verification flow
+router.post('/sendRegisterOTP', userController.sendRegisterOTP)
+router.post('/verifyRegisterAndCreate', userController.verifyRegisterAndCreate)
 
-
-//login Verify
-router.post('/userLogin',userController.loginVerify)
+//login verification flow
+router.post('/userLogin', userController.loginVerify)
+router.post('/verifyLoginOTP', userController.verifyLoginOTP)
 
 
 //get logined userData
@@ -28,6 +28,7 @@ router.post('/fetchUserPost',userController.fetchUserPost)
 
 //update post
 router.put('/updatePost',userController.updatePost)
+router.put('/editPost',userController.editPost)
 
 //findUser
 router.post('/findUser',userController.findUser)
@@ -67,6 +68,10 @@ router.post('/postComment',userController.postComment)
 //getComment
 router.post('/getComment',userController.getComment)
 
+//replyComment
+router.post('/replyComment',userController.replyComment)
+
+
 //sendWorkRequest
 router.post('/sendWorkRequest',userController.sendWorkRequest)
 
@@ -92,6 +97,11 @@ router.delete('/deleteUser/:_id',userController.deleteUser)
 
 //changeStatus
 router.post('/changeStatus',userController.changeStatus)
+
+//forgot password recovery flow
+router.post('/forgotPassword', userController.forgotPassword)
+router.post('/verifyCode', userController.verifyCode)
+router.post('/changePassword', userController.changePassword)
 
 module.exports=router
 

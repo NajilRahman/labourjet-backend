@@ -62,6 +62,12 @@ const userSchema=new mongoose.Schema({
     givenWork:{
         type:Array,
         default:[]
+    },
+    resetCode:{
+        type:String
+    },
+    resetCodeExpires:{
+        type:Date
     }
 
 })
