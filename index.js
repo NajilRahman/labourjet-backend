@@ -15,7 +15,7 @@ const server = http.createServer(app);
 const io = socketio(server, {
     pingTimeout: 6000,
     cors: {
-        origin: '*' // Allow all origins for seamless development integration
+        origin: ['https://labourjetapi.stocksigo.com', 'https://labourjet.stocksigo.com'] // Restrict to production domains
     }
 })
 
@@ -24,7 +24,7 @@ global.io = io;
 
 require('./connection/connection')
 
-app.use(cors())
+app.use(cors({ origin: ['https://labourjetapi.stocksigo.com', 'https://labourjet.stocksigo.com'], credentials: true }))
 app.use(bodyParser.json({ limit: '10mb' }))
 app.use(express.json())
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
