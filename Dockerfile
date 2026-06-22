@@ -13,8 +13,8 @@ RUN npm ci --only=production
 # Copy the rest of the application code
 COPY . .
 
-# Expose the backend port (5010)
-EXPOSE 5010
+# Expose the backend port (5000)
+EXPOSE 5000
 
 # Command to start the application
 CMD ["npm", "start"]
