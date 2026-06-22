@@ -3,12 +3,8 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const userModel = require('./model/users/userSchema');
 
-const seedSuperAdmin = async () => {
+const seedSuperAdmin = async (shouldDisconnect = false) => {
     try {
-        const dbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/labourjet';
-        await mongoose.connect(dbUri);
-        console.log('Connected to database at:', dbUri);
-
         const adminEmail = 'najilrahmanpm@gmail.com';
         const existingAdmin = await userModel.findOne({ email: adminEmail });
 
@@ -44,9 +40,21 @@ const seedSuperAdmin = async () => {
     } catch (error) {
         console.error('Error seeding Super Admin account:', error);
     } finally {
-        await mongoose.disconnect();
-        console.log('Disconnected from database.');
+        if (shouldDisconnect) {
+            await mongoose.disconnect();
+            console.log('Disconnected from database.');
+        }
     }
 };
 
-seedSuperAdmin();
+if (require.main === module) {
+    const dbUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/labourjet';
+    mongoose.connect(dbUri)
+        .then(() => {
+            console.log('Connected to database for standalone seeding at:', dbUri);
+            return seedSuperAdmin(true);
+        })
+        .catch(err => console.error(err));
+}
+
+module.exports = seedSuperAdmin;

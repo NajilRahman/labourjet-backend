@@ -1,7 +1,9 @@
 const mongoose=require('mongoose');
+const seedAdmin = require('../seedAdmin');
 mongoose.connect(process.env.MONGODB_URI)
 .then(()=>{
     console.log('db connected')
+     seedAdmin()
 })
 .catch((err)=>{
     console.log(err)
